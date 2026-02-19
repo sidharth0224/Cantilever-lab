@@ -11,9 +11,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicDir = path.join(__dirname, "..", "public");
 
-// Ensure public directory exists
-if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
+// Ensure public directory exists (skip on serverless — read-only filesystem)
+try {
+    if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
+    }
+} catch (e) {
+    // Serverless environment — filesystem is read-only, SVGs will use data URLs
 }
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
