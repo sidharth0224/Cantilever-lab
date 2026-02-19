@@ -4,30 +4,52 @@ import ChatPanel from './components/ChatPanel.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import { sendMessage, getTopics, addTopic } from './api.js';
 
+// Fallback topics when backend is unreachable (Vercel frontend-only deploy)
+const FALLBACK_TOPICS = [
+    { id: 'mern', name: 'MERN Stack', description: 'MongoDB, Express, React, Node.js', subtopics: ['MongoDB', 'Express.js', 'React.js', 'Node.js', 'REST APIs', 'JWT Auth', 'Deployment'] },
+    { id: 'sysdesign', name: 'System Design', description: 'Scalable system architecture', subtopics: ['Load Balancing', 'Caching', 'Database Sharding', 'Microservices', 'CAP Theorem', 'Message Queues', 'CDN'] },
+    { id: 'aptitude', name: 'Aptitude', description: 'Quantitative and logical reasoning', subtopics: ['Probability', 'Permutations', 'Time & Work', 'Percentages', 'Profit & Loss', 'Averages', 'Ratios'] },
+    { id: 'dsa', name: 'Data Structures', description: 'Core data structures', subtopics: ['Arrays', 'Linked Lists', 'Stacks', 'Queues', 'Trees', 'Graphs', 'Hash Tables'] },
+    { id: 'oop', name: 'Object-Oriented Programming', description: 'OOP principles', subtopics: ['Encapsulation', 'Inheritance', 'Polymorphism', 'Abstraction', 'SOLID', 'Design Patterns'] },
+    { id: 'dbms', name: 'Database Management Systems', description: 'DBMS concepts', subtopics: ['Normalization', 'SQL Joins', 'Indexing', 'Transactions', 'ACID', 'NoSQL'] },
+    { id: 'os', name: 'Operating Systems', description: 'OS fundamentals', subtopics: ['Processes', 'Threads', 'Deadlocks', 'Memory Management', 'Scheduling', 'File Systems'] },
+    { id: 'cn', name: 'Computer Networks', description: 'Networking concepts', subtopics: ['OSI Model', 'TCP/IP', 'HTTP/HTTPS', 'DNS', 'Subnetting', 'Routing'] },
+];
+
 export default function App() {
-    const [topics, setTopics] = useState([]);
+    const [topics, setTopics] = useState(FALLBACK_TOPICS);
     const [duration, setDuration] = useState(3);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [loadingStep, setLoadingStep] = useState('guardrail');
     const [activeTopic, setActiveTopic] = useState(null);
+    const [backendOnline, setBackendOnline] = useState(true);
 
     // Auth state
     const [user, setUser] = useState(() => {
-        const saved = localStorage.getItem('ai_tutor_user');
-        return saved ? JSON.parse(saved) : null;
+        try {
+            const saved = localStorage.getItem('ai_tutor_user');
+            return saved ? JSON.parse(saved) : null;
+        } catch {
+            return null;
+        }
     });
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [authMode, setAuthMode] = useState('signin');
 
-    // Load topics on mount
+    // Try to load topics from backend, fallback to hardcoded
     useEffect(() => {
         (async () => {
             try {
                 const data = await getTopics();
-                setTopics(data);
+                if (Array.isArray(data) && data.length > 0) {
+                    setTopics(data);
+                    setBackendOnline(true);
+                }
             } catch (err) {
-                console.error('Failed to load topics:', err);
+                console.warn('Backend unavailable, using fallback topics:', err.message);
+                setBackendOnline(false);
+                // Keep FALLBACK_TOPICS (initial state)
             }
         })();
     }, []);
@@ -75,7 +97,9 @@ export default function App() {
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 rejected: true,
-                rejectionReason: `❌ Connection error: ${err.response?.data?.error || err.message || 'Please try again.'}`,
+                rejectionReason: backendOnline
+                    ? `❌ Connection error: ${err.response?.data?.error || err.message || 'Please try again.'}`
+                    : `⚠️ The AI backend is not connected yet. The frontend is deployed on Vercel, but the backend server needs to be deployed separately (e.g., on Render.com). Please contact your admin to set up the backend.`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
         } finally {
@@ -89,6 +113,17 @@ export default function App() {
     };
 
     const handleAddTopic = async (name, description) => {
+        if (!backendOnline) {
+            // Add locally when backend is offline
+            const newTopic = {
+                id: `local-${Date.now()}`,
+                name,
+                description: description || '',
+                subtopics: [],
+            };
+            setTopics(prev => [...prev, newTopic]);
+            return;
+        }
         try {
             const newTopic = await addTopic(name, description);
             setTopics(prev => [...prev, newTopic]);
@@ -165,6 +200,7 @@ export default function App() {
                 onSignUp={() => openAuth('signup')}
                 onSignOut={handleSignOut}
                 onGoHome={handleGoHome}
+                backendOnline={backendOnline}
             />
             {showAuthModal && (
                 <AuthModal

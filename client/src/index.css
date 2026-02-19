@@ -550,6 +550,15 @@ body {
   font-weight: 500;
 }
 
+.status-dot.offline {
+  background: var(--warning);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.status-label.offline {
+  color: var(--warning);
+}
+
 /* ═══════════════════════════════════════════
    MESSAGES AREA
    ═══════════════════════════════════════════ */

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import OutputPanel from './OutputPanel.jsx';
 
-export default function ChatPanel({ messages, loading, loadingStep, onSend, user, onSignIn, onSignUp, onSignOut, onGoHome }) {
+export default function ChatPanel({ messages, loading, loadingStep, onSend, user, onSignIn, onSignUp, onSignOut, onGoHome, backendOnline = true }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef(null);
 
@@ -50,8 +50,8 @@ export default function ChatPanel({ messages, loading, loadingStep, onSend, user
                     <span className="header-agent-badge">Multi-Agent System</span>
                 </div>
                 <div className="chat-header-right">
-                    <span className="status-dot"></span>
-                    <span className="status-label">Online</span>
+                    <span className={`status-dot ${!backendOnline ? 'offline' : ''}`}></span>
+                    <span className={`status-label ${!backendOnline ? 'offline' : ''}`}>{backendOnline ? 'Online' : 'Frontend Only'}</span>
 
                     {/* User avatar or sign in button */}
                     {user ? (
