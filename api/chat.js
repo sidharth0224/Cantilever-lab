@@ -9,6 +9,7 @@ import knowledgeBase from "../server/knowledgeBase.js";
 // ─── Supervisor Agent ───
 async function runSupervisor(query) {
     const model = new ChatGroq({
+        apiKey: process.env.GROQ_API_KEY,
         model: "llama-3.3-70b-versatile",
         temperature: 0,
         maxTokens: 200,
@@ -73,6 +74,7 @@ async function runResearcher(topic, duration) {
     const topicsContext = knowledgeBase.toContextString();
 
     const model = new ChatGroq({
+        apiKey: process.env.GROQ_API_KEY,
         model: "llama-3.3-70b-versatile",
         temperature: 0.7,
         maxTokens: 4096,
@@ -197,6 +199,12 @@ export default async function handler(req, res) {
     try {
         const { query, duration = 3 } = req.body;
         if (!query?.trim()) return res.status(400).json({ error: 'Query is required' });
+
+        if (!process.env.GROQ_API_KEY) {
+            return res.status(500).json({
+                error: 'GROQ_API_KEY is missing in Vercel. Please add it in project settings and redeploy.'
+            });
+        }
 
         // Step 1: Supervisor (guardrail)
         const supervisorResult = await runSupervisor(query.trim());
