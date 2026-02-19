@@ -46,10 +46,17 @@ Return ONLY the image description, nothing else.`
 
         // Generate topic SVG with the description
         const svgContent = generateTopicSVG(state.topic, imageDescription);
-        const imageFileName = `topic-${Date.now()}.svg`;
-        const imagePath = path.join(publicDir, imageFileName);
-        fs.writeFileSync(imagePath, svgContent);
-        imageUrl = `/public/${imageFileName}`;
+
+        if (process.env.VERCEL) {
+            // Serverless: return SVG as data URL (no filesystem writes)
+            imageUrl = `data:image/svg+xml;base64,${Buffer.from(svgContent).toString('base64')}`;
+        } else {
+            // Local dev: write to public folder
+            const imageFileName = `topic-${Date.now()}.svg`;
+            const imagePath = path.join(publicDir, imageFileName);
+            fs.writeFileSync(imagePath, svgContent);
+            imageUrl = `/public/${imageFileName}`;
+        }
 
     } catch (error) {
         console.error("Image generation error:", error.message);
