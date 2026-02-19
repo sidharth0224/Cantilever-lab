@@ -98,7 +98,7 @@ export default function App() {
                 role: 'assistant',
                 rejected: true,
                 rejectionReason: backendOnline
-                    ? `❌ Connection error: ${err.response?.data?.error || err.message || 'Please try again.'}`
+                    ? `❌ Connection error: ${typeof err.response?.data?.error === 'string' ? err.response.data.error : err.message || 'Please try again.'}`
                     : `⚠️ The AI backend is not connected yet. The frontend is deployed on Vercel, but the backend server needs to be deployed separately (e.g., on Render.com). Please contact your admin to set up the backend.`,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
